@@ -32,6 +32,7 @@ b5 <- raster(data.RE, band = 5)
 
 xvars <- stack(b1, b2, b3, b4, b5)
 
+##based on points in 2012 mask
 sdata <- readOGR(dsn=getwd(), layer="training")
 
 
@@ -44,3 +45,17 @@ plot(rf.mdl)
 varImpPlot(rf.mdl, type=1)
 out <- predict(xvars, rf.mdl, filename="RfClassPred.img", type="response", 
         index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
+
+##based on points buffered in 25m in 2012 mask
+sdata2 <- readOGR(dsn=getwd(), layer="training")
+
+
+v2 <- as.data.frame(extract(xvars, sdata2))
+sdata2@data = data.frame(sdata2@data, v2[match(rownames(sdata2@data), rownames(v2)),])
+
+rf.mdl2 <- randomForest(x=sdata2@data[,5:ncol(sdata2@data)], y=as.factor(sdata2@data[,"type"]),
+                       ntree=501, importance=TRUE)
+plot(rf.mdl2)
+varImpPlot(rf.mdl2, type=1)
+out2 <- predict(xvars, rf.mdl2, filename="RfClassPred2.img", type="response", 
+               index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
