@@ -5,6 +5,7 @@
 
 rm(list=ls())
 
+## Functions to load and install necessary packages
 is_installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
 load_or_install<-function(package_names)  
 {  
@@ -19,14 +20,17 @@ load_or_install<-function(package_names)
 }  
 load_or_install(c("sp","rgdal", "raster","randomForest"))
 
+## Set up 3 directories for image locations and working directory
 dir2012 <- "Z:\\DATA\\SatelliteMosaics\\Data\\RapidEye\\2012"
 dir2014 <- "Z:\\IMAGERY\\RapidEye\\uncatelogued\\MitchellPlateau\\RapidEye_Ortho_processed"
 dirW <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\raster-classification"
-setwd(dir2012)
+
+## Random forest classification on 2012 Rapideye data
+setwd(dir2012) # dir to image location
 data.RE2012 <- "RapidEye-Kimberley-2012-GDA94-MGA51-Ortho.ers"
 
 b1 <- raster(data.RE2012, band = 1)
-b1@data@names <- "b1"
+b1@data@names <- "b1" # rename ind bands to something sensible
 
 b2 <- raster(data.RE2012, band = 2)
 b2@data@names <- "b2"
@@ -40,23 +44,23 @@ b4@data@names <- "b4"
 b5 <- raster(data.RE2012, band = 5)
 b5@data@names <- "b5"
 
-xvars <- stack(b1, b2, b3, b4, b5)
+xvars <- stack(b1, b2, b3, b4, b5) # create stack of individual bands
 
-setwd(dirW)
+setwd(dirW) # dir to working location
 
-sdata2 <- readOGR(dsn=getwd(), layer="training_buff25")
+sdata2 <- readOGR(dsn=getwd(), layer="training_buff25") # read in training point shape file
 
 v2 <- as.data.frame(extract(xvars, sdata2))
 sdata2@data = data.frame(sdata2@data, v2[match(rownames(sdata2@data), rownames(v2)),])
 
 rf.mdl2 <- randomForest(x=sdata2@data[,5:ncol(sdata2@data)], y=as.factor(sdata2@data[,"type"]),
-                        ntree=1000, importance=TRUE)
+                        ntree=1000, importance=TRUE) # 1000 bootstrap examples
 plot(rf.mdl2)
 varImpPlot(rf.mdl2, type=1)
 out2 <- predict(xvars, rf.mdl2, filename="rf_25buff_2012_all.img", type="response", 
                 index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
 
-##2014
+## Random forest classification on 2014 Rapideye data
 setwd(dir2014)
 data.RE2014 <- "o2014_Mitchell_Plateau_GDA94_MGA51_crosscal_data.ers"
 
