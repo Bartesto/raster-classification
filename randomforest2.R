@@ -64,16 +64,16 @@ b1.14 <- raster(data.RE2014, band = 1)
 b1.14@data@names <- "b1"
 
 b2.14 <- raster(data.RE2014, band = 2)
-b1.14@data@names <- "b2"
+b2.14@data@names <- "b2"
 
 b3.14 <- raster(data.RE2014, band = 3)
-b1.14@data@names <- "b3"
+b3.14@data@names <- "b3"
 
 b4.14 <- raster(data.RE2014, band = 4)
-b1.14@data@names <- "b4"
+b4.14@data@names <- "b4"
 
 b5.14 <- raster(data.RE2014, band = 5)
-b1.14@data@names <- "b5"
+b5.14@data@names <- "b5"
 
 xvars2 <- stack(b1.14, b2.14, b3.14, b4.14, b5.14)
 
