@@ -1,0 +1,80 @@
+## Random Forest on whole 2012 and Landsat
+
+## by Bart Huntley 05/06/2015
+
+
+rm(list=ls())
+
+## Functions to load and install necessary packages
+is_installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+load_or_install<-function(package_names)  
+{  
+        for(package_name in package_names)  
+        {  
+                if(!is_installed(package_name))  
+                {  
+                        install.packages(package_name,repos="http://cran.csiro.au/")  
+                }  
+                library(package_name,character.only=TRUE,quietly=TRUE,verbose=FALSE)  
+        }  
+}  
+load_or_install(c("sp","rgdal", "raster","randomForest"))
+
+## Set up 3 directories for image locations and working directory
+dir2012 <- "Z:\\DATA\\SatelliteMosaics\\Data\\RapidEye\\2012"
+dirL2012 <- paste0("Z:\\DEC\\Kimberley_Science_and_Sustainability_Strategy\\",
+                   "Working\\Mitchell_Plateau\\Rapideye")
+
+dirW <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\raster-classification"
+
+## Random forest classification on 2012 Rapideye data
+setwd(dir2012) # dir to image location
+data.RE2012 <- "RapidEye-Kimberley-2012-GDA94-MGA51-Ortho.ers"
+
+
+# For Rapideye
+b1 <- raster(data.RE2012, band = 1)
+b1@data@names <- "b1" # rename ind bands to something sensible
+
+b2 <- raster(data.RE2012, band = 2)
+b2@data@names <- "b2"
+
+b3 <- raster(data.RE2012, band = 3)
+b3@data@names <- "b3"
+
+b4 <- raster(data.RE2012, band = 4)
+b4@data@names <- "b4"
+
+b5 <- raster(data.RE2012, band = 5)
+b5@data@names <- "b5"
+
+# For Landsat
+setwd(dirL2012)
+data.L2012 <- "17ut10970m_2012_USG_mga51pre.ers"
+
+lb1 <- raster(data.L2012, band = 1)
+lb1@data@names <- "lb1" # rename ind bands to something sensible
+
+lb2 <- raster(data.L2012, band = 2)
+lb2@data@names <- "lb2"
+
+lb3 <- raster(data.L2012, band = 3)
+lb3@data@names <- "lb3"
+
+lb4 <- raster(data.L2012, band = 4)
+lb4@data@names <- "lb4"
+
+lb5 <- raster(data.L2012, band = 5)
+lb5@data@names <- "lb5"
+
+lb6 <- raster(data.L2012, band = 6)
+lb6@data@names <- "lb6"
+
+xvars <- stack(b1, b2, b3, b4, b5, lb1, lb2, lb3, lb4, lb5, lb6)
+
+setwd(dirW) # dir to working location
+
+sdata2 <- readOGR(dsn=getwd(), layer="training_buff25") # read in training point shape file
+
+v2 <- as.data.frame(extract(xvars, sdata2))
+sdata2@data = data.frame(sdata2@data, v2[match(rownames(sdata2@data), rownames(v2)),])
