@@ -24,7 +24,7 @@ dir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\raster-classification"
 setwd(dir)
 
 ##2012 rapideye
-data.RE <- "RE-Warrender-2012-GDA94-MGA51_for_test.ers"
+data.RE <- "RE-Warrender-ALT2014-GDA94-MGA51_cal_for_test.bil"
 
 b1 <- raster(data.RE, band = 1)
 b1@data@names <- "b1"
@@ -44,7 +44,7 @@ b5@data@names <- "b5"
 xvars <- stack(b1, b2, b3, b4, b5)
 
 ##based on points in 2012 mask
-sdata <- readOGR(dsn=getwd(), layer="training")
+sdata <- readOGR(dsn=getwd(), layer="training_buff25_ALT2014")
 
 
 v <- as.data.frame(extract(xvars, sdata))
@@ -54,7 +54,7 @@ rf.mdl <- randomForest(x=sdata@data[,5:ncol(sdata@data)], y=as.factor(sdata@data
                        ntree=501, importance=TRUE)
 plot(rf.mdl)
 varImpPlot(rf.mdl, type=1)
-out <- predict(xvars, rf.mdl, filename="rf_all_data_test.img", type="response", 
+out <- predict(xvars, rf.mdl, filename="rf_ALT2014_data_test.img", type="response", 
         index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
 
 ##based on points buffered in 25m in 2012 mask
