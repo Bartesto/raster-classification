@@ -94,6 +94,6 @@ rf.mdl3 <- randomForest(x=sdata3@data[,5:ncol(sdata3@data)], y=as.factor(sdata3@
                         ntree=1000, importance=TRUE)
 plot(rf.mdl3)
 varImpPlot(rf.mdl3, type=1)
-out3 <- predict(xvars2, rf.mdl3, filename="rf_25buff_2014_all.img", type="response", 
-                index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
+out3 <- predict(xvars2, rf.mdl3, filename="rf_25buff_2014_all_8.img", type="response", 
+                datatype= 'INT1U', index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
 
