@@ -1,0 +1,99 @@
+---
+title: "Raster classification - Random Forest"
+author: "Bart Huntley"
+date: "Thursday, June 11, 2015"
+output: html_document
+---
+
+The work in this folder is the initial stages of trialling a Random Forest technique to classify rainforest patches in the Kimberley. 
+
+Due to viewing angles and the rugged topography of the Kimberley, subsequent captures of Rapideye data are very dissimilar in appearance and do not register to each other very well. This has meant that the initial method of classifying rainforest patches (2012 Report) by using a thresholded NDVI value to capture the extent of the patches is not working when applied to the 2014 data. Using the same threshold values produces a very noisey product and adjusting this threshold introduces operator bias which should be avoided.
+
+By using Random Forest, the classification is examining all differences between the bands and letting the data drive the classification rather than an apriori index. The classification has been done on the 2012 and 2014 Rapideye data over a small test area (mapsheet Warrender) and also on the entire extent of the captures for their respective years. 
+
+Landsat band data has also been incorporated into a trial over the test area and is looking promising.
+
+**What's in here??**
+
+1. training shape files: consisting of points located inside the original rf patches as delivered as well as buffered in by 25m. The thinking behind this is that the region can give RSSA the locations of patches that have not changed and these will be the training sample sites. They are buffered in by 25m to ensure that minor edge changes do not feed erroneous test data into the classification.
+2. selected rainforest extents which is the shape file of the original delivered product and becomes the test base for classification runs.
+3. .bil files of the Warrender test area in Rapideye data (2012 & 2014).
+4. .ers files of the Warrender test area in resampled (5m) landsat data (2012 & 2014).
+5. various .R files with different permutations of random forest trials. The basic code is as below:
+
+```{r, eval=FALSE }
+rm(list=ls())
+
+is_installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+load_or_install<-function(package_names)  
+{  
+        for(package_name in package_names)  
+        {  
+                if(!is_installed(package_name))  
+                {  
+                        install.packages(package_name,repos="http://cran.csiro.au/")  
+                }  
+                library(package_name,character.only=TRUE,quietly=TRUE,verbose=FALSE)  
+        }  
+}  
+load_or_install(c("sp","rgdal", "raster","randomForest"))
+
+dir <- "Z:\\DOCUMENTATION\\BART\\R\\R_DEV\\raster-classification"
+
+setwd(dir)
+
+##2012 rapideye
+data.RE <- "RE-Warrender-ALT2014-GDA94-MGA51_cal_for_test.bil"
+
+b1 <- raster(data.RE, band = 1)
+b1@data@names <- "b1"
+
+b2 <- raster(data.RE, band = 2)
+b2@data@names <- "b2"
+
+b3 <- raster(data.RE, band = 3)
+b3@data@names <- "b3"
+
+b4 <- raster(data.RE, band = 4)
+b4@data@names <- "b4"
+
+b5 <- raster(data.RE, band = 5)
+b5@data@names <- "b5"
+
+```
+
+
+Extents can sometimes be probablematic. If they are not exact then you can't create a stack which is the next stage. To adjust them when you can't quite get them the same by saving out in ERMapper the following can be used to adjust each xmin, xmax, ymin, ymax value for each band.
+```{r, eval=FALSE}
+
+b5@extent@xmin <- 123456
+```
+
+Then continuing on...
+```{r, eval=FALSE}
+##create the stack
+xvars <- stack(b1, b2, b3, b4, b5)
+
+##load in the training data shapefile
+sdata <- readOGR(dsn=getwd(), layer="training_buff25_ALT2014")
+
+##extract values of the training data
+v <- as.data.frame(extract(xvars, sdata))
+sdata@data = data.frame(sdata@data, v[match(rownames(sdata@data), rownames(v)),])
+
+##create the model
+rf.mdl <- randomForest(x=sdata@data[,5:ncol(sdata@data)], y=as.factor(sdata@data[,"type"]),
+                       ntree=501, importance=TRUE)
+
+##Plot for errors
+plot(rf.mdl)
+
+##Plot showing importance of band variables
+varImpPlot(rf.mdl, type=1)
+
+##Create the prediction output and write out as 8 byte not 16 (see datatype arg)
+out <- predict(xvars, rf.mdl, filename="rf_ALT2014_data_test.img", type="response", 
+        datatype = 'INT1U', index=1, na.rm=TRUE, progress="window", overwrite=TRUE)
+```
+
+To add in the Landsat data it must be resampled to the smaller pixel size of the Rapideye, and then saved to **exactly** the same extents as the Rapideye. It can then be added in by layer as above (calling the bands something different like lb1 for b1 etc). This then gives the random forest calculation more variables to play with. 
